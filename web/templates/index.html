@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Documentary Editor</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2330;--mute:#667085;--line:#e3e6ec;--acc:#2563eb;--ok:#16a34a;--warn:#d97706;--bad:#dc2626}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--ink:#e8ebf1;--mute:#98a2b3;--line:#2b3240;--acc:#5b8cff}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:16px;margin:0 8px 0 0}main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:var(--acc);color:#fff;border:0;border-radius:7px;padding:6px 12px;cursor:pointer}
+button.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=number],textarea,select{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
+textarea{min-height:130px;resize:vertical}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.grow{flex:1}
+.chip{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mute)}
+.chip.ok{color:var(--ok);border-color:var(--ok)}.chip.warn{color:var(--warn);border-color:var(--warn)}.chip.bad{color:var(--bad);border-color:var(--bad)}
+.mute{color:var(--mute)}.small{font-size:12px}
+#jobbar{position:sticky;top:53px;z-index:4;display:none;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:12px}
+#jobbar .bar{height:6px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden}#jobbar .bar i{display:block;height:100%;background:var(--acc);width:0}
+#strip{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--line);margin:6px 0 2px}
+#strip div{cursor:pointer;border-right:1px solid var(--bg);min-width:3px}
+.s-ok{background:#22a55a}.s-pending{background:#98a2b3}.s-needs_attention{background:#dc2626}.s-soft{background:#e0a020}
+.scene{border-left:4px solid var(--line)}.scene.needs_attention{border-left-color:var(--bad)}.scene.ok{border-left-color:var(--ok)}.scene.pending{border-left-color:var(--mute)}
+.scene .txt{margin:4px 0 8px;font-size:15px}.clips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.clip{width:190px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
+.clip .th{height:100px;background:#0003 center/cover no-repeat;display:flex;align-items:flex-end}
+.clip .th span{background:#000a;color:#fff;font-size:11px;padding:1px 6px;border-radius:0 6px 0 0}
+.clip .meta{padding:5px 7px;font-size:12px}.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;margin-right:4px;border:1px solid var(--line)}
+.badge.bad{color:#fff;background:var(--bad);border-color:var(--bad)}.badge.warn{color:var(--warn);border-color:var(--warn)}.badge.info{color:var(--mute)}
+video{width:100%;max-width:640px;border-radius:8px;background:#000;margin-top:6px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:min(920px,95vw);padding:16px}
+dialog::backdrop{background:#0008}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:10px;max-height:52vh;overflow:auto}
+.cand{border:2px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg)}.cand:hover{border-color:var(--acc)}
+.cand .th{height:96px;background:#0003 center/cover no-repeat}.cand .m{padding:4px 6px;font-size:11px}
+label.f{display:block;font-size:12px;color:var(--mute);margin:6px 0 2px}details summary{cursor:pointer;font-weight:600}
+.settings{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 14px}
+.err{color:var(--bad)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Stock Documentary Editor</h1>
+  <select id="projSel" style="width:200px"></select>
+  <input id="newName" type="text" placeholder="new project name" style="width:170px">
+  <button id="newBtn" class="sec">Create</button>
+  <span class="grow"></span>
+  <span id="chips" class="row"></span>
+</header>
+<main>
+  <div id="jobbar"><div class="row"><b id="jobtitle"></b><span id="jobmsg" class="mute grow"></span></div><div class="bar"><i id="jobfill"></i></div></div>
+  <div id="empty" class="card">Create or pick a project above to begin.</div>
+  <div id="app" hidden>
+    <div class="card"><h2>1 · Script <span class="small mute" id="scriptInfo"></span></h2>
+      <textarea id="script" placeholder="Paste your narration script here. Each sentence becomes one scene."></textarea>
+      <div class="row" style="margin-top:8px"><button id="saveScript">Save script</button></div></div>
+    <div class="card"><h2>2 · Narration audio <span class="small mute" id="narrInfo"></span></h2>
+      <div class="row"><input id="narrFile" type="file" accept=".wav,.mp3,.m4a,.flac,.ogg"><button id="upNarr" class="sec">Import</button>
+      <span class="small mute">Use your existing ElevenLabs export. The app never generates audio.</span></div></div>
+    <div class="card"><h2>3 · Timeline &amp; footage <span class="small mute" id="tlInfo"></span></h2>
+      <div class="row"><button id="alignBtn">Align narration to script</button><button id="buildBtn">Find footage</button>
+      <button id="rebuildBtn" class="sec" title="Re-pick footage for every scene, including ones you replaced">Rebuild all</button></div>
+      <div id="warnings" class="small" style="margin-top:8px"></div>
+      <div id="strip" title="Click a block to jump to that scene"></div><div class="small mute">Green = ready · red = needs attention · grey = no footage yet</div></div>
+    <div class="card"><h2>4 · Preview &amp; export</h2>
+      <div class="row"><button id="prevBtn" class="sec">Render preview (low-res)</button>
+      <button id="expNarr">Export video + narration</button><button id="expVid" class="sec">Export video only</button></div>
+      <video id="prevVideo" controls hidden></video><div id="outputs" class="small" style="margin-top:8px"></div></div>
+    <details class="card"><summary>Settings</summary><div class="settings" id="settings" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button id="saveSettings" class="sec">Save settings</button></div></details>
+    <div id="scenes"></div>
+  </div>
+</main>
+<dialog id="dlg">
+  <div class="row"><b id="dlgTitle" class="grow"></b><button class="sec" id="dlgClose">Close</button></div>
+  <div class="row" style="margin-top:8px"><input id="candQ" type="text" class="grow" placeholder="Search stock footage (e.g. yellow leaves close up)"><button id="candGo">Search</button></div>
+  <div id="candErr" class="err small"></div><div class="grid" id="candGrid"></div>
+  <hr style="border-color:var(--line);margin:14px 0">
+  <b>Or use your own file</b>
+  <div class="row" style="margin-top:6px"><input id="localPath" type="text" class="grow" placeholder="Full path, e.g. D:\Footage\leaves.mp4"><button id="localGo" class="sec">Use path</button></div>
+  <div class="row" style="margin-top:6px"><input id="localFile" type="file" accept=".mp4,.mov,.webm,.jpg,.jpeg,.png"><button id="localUp" class="sec">Upload</button></div>
+</dialog>
+<script>
+const $=id=>document.getElementById(id);
+function h(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')e.className=v;else if(k==='style')e.style.cssText=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(v!==false&&v!=null)e.setAttribute(k,v===true?'':v)}for(const kid of kids.flat())if(kid!=null)e.append(kid.nodeType?kid:document.createTextNode(String(kid)));return e}
+const fmt=t=>{const m=Math.floor(t/60),s=t-m*60;return String(m).padStart(2,'0')+':'+s.toFixed(2).padStart(5,'0')};
+let P=null,state=null,dlgCtx=null;
+async function api(url,opt={}){const o={method:opt.method||'GET',headers:{}};if(opt.json!==undefined){o.headers['Content-Type']='application/json';o.body=JSON.stringify(opt.json)}if(opt.form)o.body=opt.form;const r=await fetch(url,o);let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||('Request failed ('+r.status+')'));return d}
+function toast(msg){$('warnings').replaceChildren(h('span',{class:'err'},msg))}
+
+async function loadStatus(){const s=await api('/api/status');$('chips').replaceChildren(
+  h('span',{class:'chip '+(s.ffmpeg?'ok':'bad')},'FFmpeg '+(s.ffmpeg?'found':'missing')),
+  h('span',{class:'chip '+(s.providers.pexels?'ok':'bad')},'Pexels key '+(s.providers.pexels?'set':'missing (.env)')),
+  h('span',{class:'chip '+(s.whisper?'ok':'warn')},'Whisper '+(s.whisper?'installed':'not installed – silence timing')))}
+async function loadProjects(sel){const list=await api('/api/projects');$('projSel').replaceChildren(h('option',{value:''},'— project —'),...list.map(n=>h('option',{value:n,selected:n===sel},n)))}
+$('projSel').onchange=e=>{P=e.target.value||null;load()};
+$('newBtn').onclick=async()=>{try{const n=$('newName').value.trim();await api('/api/projects',{method:'POST',json:{name:n}});$('newName').value='';await loadProjects(n);P=n;load()}catch(e){alert(e.message)}};
+
+async function load(keepScroll){
+  if(!P){$('app').hidden=true;$('empty').hidden=false;return}
+  state=await api('/api/projects/'+encodeURIComponent(P));$('app').hidden=false;$('empty').hidden=true;
+  if(document.activeElement!==$('script'))$('script').value=state.script;
+  $('scriptInfo').textContent=state.sentences+' sentences';
+  $('narrInfo').textContent=state.narration?state.narration.file+' · '+state.narration.duration.toFixed(2)+' s':'none imported yet';
+  renderSettings();renderTimeline();renderOutputs();
+}
+function renderSettings(){const s=state.settings,box=$('settings');box.replaceChildren();
+  const fields=[['topic_hint','Topic hint (added to vague searches)','text'],['align_backend','Timing method','select',['auto','whisper','silence','estimate']],
+   ['whisper_model','Whisper model','select',['tiny.en','base.en','small.en','medium.en']],['whisper_device','Whisper device','select',['cpu','cuda']],
+   ['min_clip','Min clip length (s)','number'],['max_clip','Max clip length (s)','number'],['target_clip','Preferred clip length (s)','number'],
+   ['crossfade','Crossfade inside a sentence (s, 0=cuts)','number'],['max_api_calls_per_scene','Max live searches per scene','number'],
+   ['music_path','Background music file (optional)','text'],['music_volume','Music volume (0–1)','number'],['srt_max_cue_chars','Split subtitles longer than N chars (0=off)','number']];
+  for(const[k,label,type,opts]of fields){const inp=type==='select'?h('select',{id:'set_'+k},...opts.map(o=>h('option',{value:o,selected:String(s[k])===o},o))):h('input',{id:'set_'+k,type:type,value:s[k],step:'any'});
+    box.append(h('div',{},h('label',{class:'f'},label),inp))}
+  box.append(h('div',{},h('label',{class:'f'},'Mix background music into narrated export'),h('input',{id:'set_music_enabled',type:'checkbox',checked:!!s.music_enabled,style:'width:auto'})))}
+$('saveSettings').onclick=async()=>{const patch={};for(const el of $('settings').querySelectorAll('[id^=set_]')){const k=el.id.slice(4);patch[k]=el.type==='checkbox'?el.checked:el.value}
+  try{await api('/api/projects/'+P+'/settings',{method:'PUT',json:patch});toast('');await load()}catch(e){toast(e.message)}};
+$('saveScript').onclick=async()=>{const r=await api('/api/projects/'+P+'/script',{method:'PUT',json:{text:$('script').value}});await load()};
+$('upNarr').onclick=async()=>{const f=$('narrFile').files[0];if(!f)return toast('Choose an audio file first');const fd=new FormData();fd.append('file',f);
+  try{await api('/api/projects/'+P+'/narration',{method:'POST',form:fd});toast('');await load()}catch(e){toast(e.message)}};
+
+function badge(text,cls){return h('span',{class:'badge '+cls},text)}
+const FLAG={no_footage:['No footage found','bad'],looped:['Clip looped – not enough footage','bad'],render_failed:['Render failed','bad'],error:['Error','bad'],rate_limited:['Rate limited','bad'],
+  low_relevance:['Low match – check','warn'],image_fallback:['Uses still image','warn'],repeat:['Footage repeated','warn'],reused_source:['Same file used twice','info']};
+function renderTimeline(){const tl=state.timeline,sc=tl.scenes;
+  const built=sc.filter(s=>s.status==='ok').length,att=sc.filter(s=>s.status==='needs_attention').length;
+  $('tlInfo').textContent=sc.length?`${sc.length} scenes · ${fmt(tl.audio_duration)} · ${built} ready · ${att} need attention`:'not aligned yet';
+  const al=tl.alignment||{};const w=[];if(al.backend)w.push(h('div',{},'Timing method: ',h('b',{},al.backend),al.match_ratio!=null?` (${Math.round(al.match_ratio*100)}% of script words matched)`:''));
+  for(const m of al.warnings||[])w.push(h('div',{class:'err'},'⚠ '+m));$('warnings').replaceChildren(...w);
+  $('strip').replaceChildren(...sc.map(s=>h('div',{class:s.status==='ok'&&!(s.flags||[]).some(f=>['low_relevance','image_fallback','repeat'].includes(f))?'s-ok':s.status==='ok'?'s-soft':s.status==='pending'?'s-pending':'s-needs_attention',
+    style:`flex:${s.duration}`,title:`Scene ${s.id}: ${s.text.slice(0,60)}`,onclick:()=>$('sc'+s.id)?.scrollIntoView({behavior:'smooth',block:'center'})})));
+  $('scenes').replaceChildren(...sc.map(sceneCard))}
+function sceneCard(s){
+  const timing={whisper:['Timing: speech-matched','info'],silence:['Timing: from pauses','info'],estimate:['Timing ESTIMATED','warn']}[s.timing_source]||['','info'];
+  const head=h('div',{class:'row'},h('b',{},'Scene '+s.id),h('span',{class:'mute'},fmt(s.start)+' → '+fmt(s.end)+'  ('+s.duration.toFixed(2)+' s)'),
+    badge(timing[0],timing[1]),s.status==='needs_attention'?badge('NEEDS ATTENTION','bad'):s.status==='pending'?badge('no footage yet','info'):badge('ready','info'),...(s.flags||[]).filter(f=>FLAG[f]).map(f=>badge(FLAG[f][0],FLAG[f][1])));
+  const clips=h('div',{class:'clips'},...s.clips.map((c,i)=>h('div',{class:'clip'},
+    h('div',{class:'th',style:c.thumb_url?`background-image:url("${c.thumb_url}")`:''},h('span',{},c.source+(c.pinned?' · yours':'')+(c.kind==='image'?' · photo':''))),
+    h('div',{class:'meta'},h('div',{},fmt(c.start)+' → '+fmt(c.end)),h('div',{class:'mute'},c.duration.toFixed(2)+' s'+(c.loop?' · looped':'')),
+      c.page_url?h('a',{href:c.page_url,target:'_blank',rel:'noopener noreferrer',class:'small'},'source page'):null,
+      h('div',{},h('button',{class:'sec small',onclick:()=>openReplace(s,i)},'Replace'))))));
+  const vid=h('video',{id:'v'+s.id,controls:true,hidden:true});
+  const btns=h('div',{class:'row'},h('button',{class:'sec',onclick:()=>scenePrev(s)},'▶ Preview'),
+    h('button',{class:'sec',onclick:()=>runJob('/api/projects/'+P+'/scenes/'+s.id+'/search_again','Search again',()=>{})},'Search again'),
+    h('button',{class:'sec',onclick:()=>openReplace(s,null)},'Replace scene'),
+    h('span',{class:'grow'}),h('input',{type:'text',id:'qe'+s.id,value:(s.queries||[]).slice(0,3).join(', '),style:'max-width:320px',title:'Search terms (comma separated)'}),
+    h('button',{class:'sec',onclick:()=>applyQueries(s)},'Use these searches'));
+  return h('div',{class:'card scene '+s.status,id:'sc'+s.id},head,h('div',{class:'txt'},s.text),s.error?h('div',{class:'err small'},s.error):null,clips,
+    s.clips.length===0?h('div',{class:'mute small'},'Searches: '+(s.queries||[]).slice(0,3).join(' · ')):null,btns,vid)}
+async function applyQueries(s){const qs=$('qe'+s.id).value.split(',').map(x=>x.trim()).filter(Boolean);
+  try{await api(`/api/projects/${P}/scenes/${s.id}/queries`,{method:'PUT',json:{queries:qs}});runJob(`/api/projects/${P}/scenes/${s.id}/search_again`,'Searching',()=>{})}catch(e){toast(e.message)}}
+async function scenePrev(s){runJob(`/api/projects/${P}/scenes/${s.id}/preview`,'Rendering scene '+s.id,r=>{const v=$('v'+s.id);v.src=r.url;v.hidden=false;v.play()},{noReload:true})}
+
+function renderOutputs(){const f=state.files,out=[];const link=(t,p)=>h('a',{href:`/files/${P}/${p}`,target:'_blank'},t);
+  if(f.preview){$('prevVideo').src=`/files/${P}/preview/preview.mp4?t=${Date.now()}`;$('prevVideo').hidden=false}
+  if(f.with_narration)out.push(link('documentary_with_narration.mp4','final/documentary_with_narration.mp4'),' · ');
+  if(f.video_only)out.push(link('documentary_video.mp4','final/documentary_video.mp4'),' · ');
+  if(f.srt)out.push(link('subtitles.srt','final/subtitles.srt'));
+  $('outputs').replaceChildren(h('span',{class:'mute'},'Files are in projects/'+P+'/final  '),...out)}
+
+// ---------- jobs
+let busy=false;
+async function runJob(url,title,onDone,opts={}){if(busy)return toast('Another task is running');busy=true;
+  try{const j=await api(url,{method:'POST',json:opts.body||{}});$('jobbar').style.display='block';$('jobtitle').textContent=title;
+    while(true){await new Promise(r=>setTimeout(r,600));const s=await api('/api/jobs/'+j.id);$('jobfill').style.width=Math.round(s.progress*100)+'%';$('jobmsg').textContent=s.message||'';
+      if(s.status==='done'){onDone(s.result);let note='';const r=s.result||{};
+        if(r.paused)note=r.paused;else if(r.warnings&&r.warnings.length)note=r.warnings.join(' ');
+        if(!opts.noReload)await load();if(note)toast(note);break}
+      if(s.status==='error'){toast(s.error);break}}
+  }catch(e){toast(e.message)}finally{busy=false;setTimeout(()=>{$('jobbar').style.display='none'},1200)}}
+$('alignBtn').onclick=()=>runJob(`/api/projects/${P}/align`,'Aligning narration',()=>{});
+$('buildBtn').onclick=()=>runJob(`/api/projects/${P}/build`,'Finding footage',()=>{});
+$('rebuildBtn').onclick=()=>{if(confirm('Re-pick footage for EVERY scene, including clips you replaced yourself?'))runJob(`/api/projects/${P}/build`,'Rebuilding footage',()=>{},{body:{force:true}})};
+$('prevBtn').onclick=()=>runJob(`/api/projects/${P}/preview`,'Rendering preview',()=>{});
+const doExport=n=>{const bad=state.timeline.scenes.filter(s=>s.status!=='ok').length;
+  if(bad&&!confirm(bad+' scene(s) still need attention and will show a grey placeholder. Export anyway?'))return;
+  runJob(`/api/projects/${P}/export`,'Exporting',r=>{if(r.report&&r.report.failed_scenes.length)toast('Some scenes failed to render and use placeholders: '+r.report.failed_scenes.map(f=>f.scene).join(', '))},{body:{with_narration:n}})};
+$('expNarr').onclick=()=>doExport(true);$('expVid').onclick=()=>doExport(false);
+
+// ---------- replace dialog
+function openReplace(s,idx){dlgCtx={s,idx};$('dlgTitle').textContent=`Scene ${s.id} – replace ${idx==null?'the whole scene':'clip '+(idx+1)}`;$('candQ').value='';$('candErr').textContent='';$('candGrid').replaceChildren();$('dlg').showModal();loadCands('')}
+async function loadCands(q){$('candErr').textContent='Searching…';$('candGrid').replaceChildren();
+  try{const list=await api(`/api/projects/${P}/scenes/${dlgCtx.s.id}/candidates`+(q?'?q='+encodeURIComponent(q):''));$('candErr').textContent=list.length?'':'No results – try other words.';
+    $('candGrid').replaceChildren(...list.map(c=>h('div',{class:'cand',onclick:()=>pickCand(c)},h('div',{class:'th',style:c.thumb?`background-image:url("${c.thumb}")`:''}),
+      h('div',{class:'m'},(c.slug||c.media_id).slice(0,46),h('br'),c.source+' · '+(c.kind==='image'?'photo':c.duration.toFixed(0)+' s')+' · '+c.width+'×'+c.height))))}
+  catch(e){$('candErr').textContent=e.message}}
+$('candGo').onclick=()=>loadCands($('candQ').value.trim());$('candQ').onkeydown=e=>{if(e.key==='Enter')$('candGo').click()};$('dlgClose').onclick=()=>$('dlg').close();
+async function pickCand(c){$('candErr').textContent='Downloading…';try{await api(`/api/projects/${P}/scenes/${dlgCtx.s.id}/replace`,{method:'POST',json:{clip_index:dlgCtx.idx,candidate:c}});$('dlg').close();await load()}catch(e){$('candErr').textContent=e.message}}
+$('localGo').onclick=async()=>{try{await api(`/api/projects/${P}/scenes/${dlgCtx.s.id}/replace`,{method:'POST',json:{clip_index:dlgCtx.idx,path:$('localPath').value.trim().replace(/^"|"$/g,'')}});$('dlg').close();await load()}catch(e){$('candErr').textContent=e.message}};
+$('localUp').onclick=async()=>{const f=$('localFile').files[0];if(!f)return;const fd=new FormData();fd.append('file',f);fd.append('clip_index',dlgCtx.idx==null?'':dlgCtx.idx);
+  try{await api(`/api/projects/${P}/scenes/${dlgCtx.s.id}/replace_upload`,{method:'POST',form:fd});$('dlg').close();await load()}catch(e){$('candErr').textContent=e.message}};
+
+loadStatus();loadProjects().then(()=>{const list=[...$('projSel').options].map(o=>o.value).filter(Boolean);if(list.length===1){$('projSel').value=list[0];P=list[0];load()}});
+</script>
+</body>
+</html>

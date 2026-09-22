@@ -1,0 +1,6 @@
+flask>=3.0
+requests>=2.31
+python-dotenv>=1.0
+rapidfuzz>=3.6
+# Speech alignment (recommended; the app falls back to silence-based timing without it)
+faster-whisper>=1.0
